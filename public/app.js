@@ -6,6 +6,16 @@ const lastUpdate = document.querySelector("#lastUpdate");
 const cueCount = document.querySelector("#cueCount");
 const cueList = document.querySelector("#cueList");
 const runningList = document.querySelector("#runningList");
+const mobileStatus = document.querySelector("#mobileStatus");
+const mobileLastUpdate = document.querySelector("#mobileLastUpdate");
+const mobileGroup = document.querySelector("#mobileGroup");
+const mobileCueNumber = document.querySelector("#mobileCueNumber");
+const mobileCueName = document.querySelector("#mobileCueName");
+const mobileProgress = document.querySelector("#mobileProgress");
+const mobileElapsed = document.querySelector("#mobileElapsed");
+const mobileRemaining = document.querySelector("#mobileRemaining");
+const mobileRunningCount = document.querySelector("#mobileRunningCount");
+const mobileWorkspace = document.querySelector("#mobileWorkspace");
 
 let currentState = null;
 let serverOnline = false;
@@ -70,9 +80,11 @@ function render(state) {
     if (currentState.lastError) statusText.textContent = currentState.lastError;
   }
   workspaceHero.textContent = currentState.workspaceName || "Waiting for workspace";
-  workspaceText.textContent = getCurrentGroup(currentState) || "-";
+  const currentGroup = getCurrentGroup(currentState) || "-";
+  workspaceText.textContent = currentGroup;
   runningCount.textContent = String((currentState.running || []).length);
-  lastUpdate.textContent = currentState.lastMessageAt ? new Date(currentState.lastMessageAt).toLocaleTimeString() : "-";
+  const updateTime = currentState.lastMessageAt ? new Date(currentState.lastMessageAt).toLocaleTimeString() : "-";
+  lastUpdate.textContent = updateTime;
 
   cueCount.textContent = `${(currentState.cues || []).length} cues`;
   cueList.classList.toggle("empty", !currentState.cues?.length);
@@ -85,7 +97,30 @@ function render(state) {
     ? currentState.running.map(renderRunningCue).join("")
     : "Nothing running.";
 
+  renderMobileGlance(currentState, currentGroup, updateTime);
   requestAnimationFrame(() => scrollToActiveCue(currentState));
+}
+
+function renderMobileGlance(state, currentGroup, updateTime) {
+  const cueMap = new Map((state.cues || []).map((cue) => [cue.uniqueID, cue]));
+  const primary = pickPrimaryCue(state.running || [], cueMap);
+  const fullCue = cueMap.get(primary?.uniqueID) || primary;
+  const timing = state.time?.[primary?.uniqueID] || {};
+  const elapsed = Number(timing.actionElapsed || 0);
+  const duration = Number(timing.duration || 0);
+  const remaining = duration > 0 ? Math.max(0, duration - elapsed) : null;
+  const progress = duration > 0 ? Math.min(100, Math.max(0, (elapsed / duration) * 100)) : 0;
+
+  mobileStatus.textContent = statusText.textContent;
+  mobileLastUpdate.textContent = updateTime;
+  mobileGroup.textContent = currentGroup;
+  mobileCueNumber.textContent = fullCue?.number || "-";
+  mobileCueName.textContent = fullCue?.name || "No cue running";
+  mobileProgress.style.width = `${progress}%`;
+  mobileElapsed.textContent = `${formatTime(elapsed)} elapsed`;
+  mobileRemaining.textContent = remaining == null ? "duration unavailable" : `${formatTime(remaining)} remaining`;
+  mobileRunningCount.textContent = `${(state.running || []).length} running`;
+  mobileWorkspace.textContent = state.workspaceName || "No workspace";
 }
 
 async function pollState() {

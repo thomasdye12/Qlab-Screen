@@ -5,7 +5,7 @@ export const ROOT_DIR = fileURLToPath(new URL("..", import.meta.url));
 export const PUBLIC_DIR = join(ROOT_DIR, "public");
 export const SETTINGS_PATH = join(ROOT_DIR, "settings.json");
 
-export const HTTP_PORT = Number(process.env.PORT || 3000);
+export const HTTP_PORT = Number(process.env.PORT || 3030);
 export const QLAB_TCP_PORT = Number(process.env.QLAB_TCP_PORT || 53000);
 export const ADMIN_USER = process.env.ADMIN_USER || "admin";
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "thomas";

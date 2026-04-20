@@ -9,7 +9,7 @@ ENV_FILE="/etc/qlabconnect.env"
 SERVICE_USER="qlabconnect"
 REPO_URL="${REPO_URL:-${1:-}}"
 BRANCH="${BRANCH:-main}"
-PORT="${PORT:-3000}"
+PORT="${PORT:-3030}"
 QLAB_TCP_PORT="${QLAB_TCP_PORT:-53000}"
 ADMIN_USER="${ADMIN_USER:-admin}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-thomas}"
@@ -22,7 +22,7 @@ fi
 if [[ -z "${REPO_URL}" ]]; then
   echo "REPO_URL is required." >&2
   echo "Example:" >&2
-  echo "  curl -fsSL https://raw.githubusercontent.com/USER/REPO/main/scripts/install-ubuntu.sh | sudo REPO_URL=https://github.com/USER/REPO.git bash" >&2
+  echo "  curl -fsSL https://raw.githubusercontent.com/thomasdye12/Qlab-Screen/main/scripts/install-ubuntu.sh | sudo REPO_URL=https://github.com/thomasdye12/Qlab-Screen.git bash" >&2
   exit 1
 fi
 

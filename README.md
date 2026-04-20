@@ -9,6 +9,7 @@ The app connects to QLab over TCP OSC, reads cue information, watches what is ru
 - Read-only QLab connection using OSC over TCP.
 - Admin-protected saved connection settings.
 - Main monitor view showing:
+
    - workspace name as the main heading
    - cue order
    - running cues
@@ -18,6 +19,7 @@ The app connects to QLab over TCP OSC, reads cue information, watches what is ru
 
 - TV dashboard view for full-screen display.
 - Lightweight browser updates:
+
    - full cue list is sent only on initial load or cue-list changes
    - routine updates send small status/running/timing patches
 
@@ -26,9 +28,9 @@ The app connects to QLab over TCP OSC, reads cue information, watches what is ru
 
 ## Screens
 
-- Main monitor: `http://localhost:3000/`
-- Admin settings: `http://localhost:3000/admin.html`
-- TV dashboard: `http://localhost:3000/dashboard.html`
+- Main monitor: `http://localhost:3030/`
+- Admin settings: `http://localhost:3030/admin.html`
+- TV dashboard: `http://localhost:3030/dashboard.html`
 
 Admin uses HTTP Basic Auth.
 
@@ -75,7 +77,7 @@ npm run dev
 Then open:
 
 ```text
-http://localhost:3000
+http://localhost:3030
 ```
 
 ## Configuration
@@ -83,7 +85,7 @@ http://localhost:3000
 Environment variables:
 
 ```bash
-PORT=3000
+PORT=3030
 QLAB_TCP_PORT=53000
 ADMIN_USER=admin
 ADMIN_PASSWORD=thomas
@@ -139,28 +141,8 @@ It installs Node.js if needed, clones your GitHub repository, installs productio
 After this repo is on GitHub, replace the URLs below with your own repository details.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/scripts/install-ubuntu.sh \
-  | sudo REPO_URL=https://github.com/YOUR_USER/YOUR_REPO.git bash
-```
-
-Optional branch:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/scripts/install-ubuntu.sh \
-  | sudo REPO_URL=https://github.com/YOUR_USER/YOUR_REPO.git BRANCH=main bash
-```
-
-Optional custom admin password:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/scripts/install-ubuntu.sh \
-  | sudo REPO_URL=https://github.com/YOUR_USER/YOUR_REPO.git ADMIN_PASSWORD='change-this' bash
-```
-
-You can also run the script from a checked-out copy:
-
-```bash
-sudo REPO_URL=https://github.com/YOUR_USER/YOUR_REPO.git ./scripts/install-ubuntu.sh
+curl -fsSL https://raw.githubusercontent.com/thomasdye12/Qlab-Screen/main/scripts/install-ubuntu.sh \
+  | sudo REPO_URL=https://github.com/thomasdye12/Qlab-Screen.git bash
 ```
 
 ## Service Commands
