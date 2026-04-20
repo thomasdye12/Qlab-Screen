@@ -26,7 +26,7 @@ if [[ -z "${REPO_URL}" ]]; then
   exit 1
 fi
 
-echo "Installing QLab Connect from ${REPO_URL} (${BRANCH})"
+echo "Installing QLab Connect from ${REPO_URL} (${BRANCH}) v1"
 
 # apt-get update
 apt-get install -y ca-certificates curl git
