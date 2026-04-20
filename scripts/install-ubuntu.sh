@@ -28,7 +28,7 @@ fi
 
 echo "Installing QLab Connect from ${REPO_URL} (${BRANCH})"
 
-apt-get update
+# apt-get update
 apt-get install -y ca-certificates curl git
 
 install_node_if_needed() {
