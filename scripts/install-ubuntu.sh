@@ -47,9 +47,9 @@ install_node_if_needed() {
 
 # install_node_if_needed
 
-if ! id "${SERVICE_USER}" >/dev/null 2>&1; then
-  useradd --system --home "${APP_ROOT}" --shell /usr/sbin/nologin "${SERVICE_USER}"
-fi
+# if ! id "${SERVICE_USER}" >/dev/null 2>&1; then
+#   useradd --system --home "${APP_ROOT}" --shell /usr/sbin/nologin "${SERVICE_USER}"
+# fi
 
 mkdir -p "${APP_ROOT}"
 
