@@ -1,6 +1,6 @@
 [Unit]
 Description=QLab Connect read-only QLab monitor
-Documentation=https://github.com/YOUR_USER/YOUR_REPO
+Documentation=https://github.com/thomasdye12/Qlab-Screen
 After=network-online.target
 Wants=network-online.target
 
