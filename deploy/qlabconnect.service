@@ -6,8 +6,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=qlabconnect
-Group=qlabconnect
+User=root
+Group=root
 WorkingDirectory=/var/QlabConnect/app
 EnvironmentFile=/etc/qlabconnect.env
 ExecStart=/usr/bin/npm start

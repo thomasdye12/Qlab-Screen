@@ -6,7 +6,6 @@ APP_ROOT="/var/QlabConnect"
 APP_DIR="${APP_ROOT}/app"
 SERVICE_FILE="/etc/systemd/system/${APP_NAME}.service"
 ENV_FILE="/etc/qlabconnect.env"
-SERVICE_USER="qlabconnect"
 REPO_URL="${REPO_URL:-${1:-}}"
 BRANCH="${BRANCH:-main}"
 PORT="${PORT:-3030}"
@@ -47,10 +46,6 @@ install_node_if_needed() {
 
 # install_node_if_needed
 
-# if ! id "${SERVICE_USER}" >/dev/null 2>&1; then
-#   useradd --system --home "${APP_ROOT}" --shell /usr/sbin/nologin "${SERVICE_USER}"
-# fi
-
 mkdir -p "${APP_ROOT}"
 
 if [[ -d "${APP_DIR}/.git" ]]; then
@@ -63,10 +58,10 @@ else
   git clone --branch "${BRANCH}" "${REPO_URL}" "${APP_DIR}"
 fi
 
-chown -R "${SERVICE_USER}:${SERVICE_USER}" "${APP_ROOT}"
+chown -R root:root "${APP_ROOT}"
 
 echo "Installing production dependencies"
-runuser -u "${SERVICE_USER}" -- npm --prefix "${APP_DIR}" ci --omit=dev
+npm --prefix "${APP_DIR}" ci --omit=dev
 
 if [[ ! -f "${APP_DIR}/settings.json" ]]; then
   cat > "${APP_DIR}/settings.json" <<'JSON'
@@ -79,7 +74,7 @@ if [[ ! -f "${APP_DIR}/settings.json" ]]; then
 JSON
 fi
 
-chown "${SERVICE_USER}:${SERVICE_USER}" "${APP_DIR}/settings.json"
+chown root:root "${APP_DIR}/settings.json"
 chmod 600 "${APP_DIR}/settings.json"
 
 if [[ ! -f "${ENV_FILE}" ]]; then

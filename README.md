@@ -130,11 +130,10 @@ scripts/install-ubuntu.sh Ubuntu installer
 The installer creates:
 
 - application directory: `/var/QlabConnect/app`
-- system user: `qlabconnect`
 - environment file: `/etc/qlabconnect.env`
 - systemd service: `qlabconnect.service`
 
-It installs Node.js if needed, clones your GitHub repository, installs production dependencies, creates a starter `settings.json`, enables the service, and starts it on boot.
+It installs Node.js if needed, clones your GitHub repository, installs production dependencies, creates a starter `settings.json`, enables the service, and starts it on boot. The installer and systemd service run as `root`.
 
 ### Run From GitHub
 
@@ -184,8 +183,8 @@ Re-run the installer with the same `REPO_URL`, or update manually:
 
 ```bash
 cd /var/QlabConnect/app
-sudo -u qlabconnect git pull
-sudo -u qlabconnect npm ci --omit=dev
+sudo git pull
+sudo npm ci --omit=dev
 sudo systemctl restart qlabconnect
 ```
 
