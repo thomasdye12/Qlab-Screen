@@ -45,7 +45,7 @@ install_node_if_needed() {
   apt-get install -y nodejs
 }
 
-install_node_if_needed
+# install_node_if_needed
 
 if ! id "${SERVICE_USER}" >/dev/null 2>&1; then
   useradd --system --home "${APP_ROOT}" --shell /usr/sbin/nologin "${SERVICE_USER}"
