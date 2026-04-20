@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>QLab Screen Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell admin-shell">
+      <section class="connection-panel" aria-label="Admin settings">
+        <div>
+          <p class="eyebrow">Admin</p>
+          <h1>Saved QLab connection</h1>
+        </div>
+        <nav class="page-links" aria-label="Pages">
+          <a href="/">Monitor</a>
+          <a href="/dashboard.html">TV Dashboard</a>
+        </nav>
+      </section>
+
+      <section class="panel admin-panel">
+        <form id="adminForm" class="admin-form">
+          <label>
+            <span>QLab host</span>
+            <input name="host" autocomplete="off" placeholder="10.0.4.189" required>
+          </label>
+          <label>
+            <span>QLab passcode</span>
+            <input name="passcode" autocomplete="off" inputmode="numeric" placeholder="Leave blank to keep saved passcode">
+          </label>
+          <label>
+            <span>Workspace ID/name</span>
+            <input name="workspaceId" autocomplete="off" placeholder="Optional">
+          </label>
+          <label class="toggle-row">
+            <input name="autoConnect" type="checkbox">
+            <span>Auto-connect when the app starts</span>
+          </label>
+          <div class="form-actions">
+            <button type="submit">Save Settings</button>
+            <button id="connectSavedButton" type="button" class="secondary">Connect Saved</button>
+          </div>
+          <p id="adminMessage" class="form-message" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="/admin.js" type="module"></script>
+  </body>
+</html>

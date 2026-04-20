@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>QLab TV Dashboard</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body class="tv-body server-offline">
+    <main class="tv-shell">
+      <section class="tv-status">
+        <span id="tvConnection">Disconnected</span>
+        <span id="tvWorkspace">-</span>
+        <span id="tvClock">--:--</span>
+      </section>
+
+      <section class="tv-current" aria-live="polite">
+        <p class="eyebrow">Current cue group</p>
+        <h1 id="tvGroup">Waiting for QLab</h1>
+        <div class="tv-cue-line">
+          <span id="tvCueNumber">-</span>
+          <strong id="tvCueName">No cue running</strong>
+        </div>
+        <div class="tv-progress">
+          <span id="tvProgress"></span>
+        </div>
+        <div class="tv-time">
+          <span id="tvElapsed">--:--.- elapsed</span>
+          <span id="tvRemaining">--:--.- remaining</span>
+        </div>
+      </section>
+
+      <section class="tv-next">
+        <p class="eyebrow">Running cues</p>
+        <div id="tvRunningList">Nothing running.</div>
+      </section>
+    </main>
+
+    <script src="/dashboard.js" type="module"></script>
+  </body>
+</html>

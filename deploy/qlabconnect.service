@@ -1,0 +1,22 @@
+[Unit]
+Description=QLab Connect read-only QLab monitor
+Documentation=https://github.com/YOUR_USER/YOUR_REPO
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=qlabconnect
+Group=qlabconnect
+WorkingDirectory=/var/QlabConnect/app
+EnvironmentFile=/etc/qlabconnect.env
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/QlabConnect/app
+
+[Install]
+WantedBy=multi-user.target

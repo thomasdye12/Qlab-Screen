@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>QLab Screen</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body class="server-offline">
+    <main class="shell">
+      <section class="connection-panel" aria-label="QLab connection">
+        <div>
+          <p class="eyebrow">QLab Screen</p>
+          <h1 id="workspaceHero">Waiting for workspace</h1>
+        </div>
+        <nav class="page-links" aria-label="Pages">
+          <a href="/admin.html">Admin</a>
+          <a href="/dashboard.html">TV Dashboard</a>
+        </nav>
+      </section>
+
+      <section class="status-strip" aria-live="polite">
+        <div>
+          <span class="label">Status</span>
+          <strong id="statusText">Disconnected</strong>
+        </div>
+        <div>
+          <span class="label">Current Group</span>
+          <strong id="workspaceText">-</strong>
+        </div>
+        <div>
+          <span class="label">Running</span>
+          <strong id="runningCount">0</strong>
+        </div>
+        <div>
+          <span class="label">Last update</span>
+          <strong id="lastUpdate">-</strong>
+        </div>
+      </section>
+
+      <section class="boards">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Cue Order</h2>
+            <span id="cueCount">0 cues</span>
+          </div>
+          <div id="cueList" class="cue-list empty">No cues loaded.</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Running Now</h2>
+            <span>live timing</span>
+          </div>
+          <div id="runningList" class="running-list empty">Nothing running.</div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
