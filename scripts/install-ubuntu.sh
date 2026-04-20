@@ -61,7 +61,7 @@ fi
 chown -R root:root "${APP_ROOT}"
 
 echo "Installing production dependencies"
-/root/.nvm/versions/node/v16.20.2/bin/npm --prefix "${APP_DIR}" ci --omit=dev
+# /root/.nvm/versions/node/v16.20.2/bin/npm --prefix "${APP_DIR}" ci --omit=dev
 
 if [[ ! -f "${APP_DIR}/settings.json" ]]; then
   cat > "${APP_DIR}/settings.json" <<'JSON'
