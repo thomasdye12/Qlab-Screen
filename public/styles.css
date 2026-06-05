@@ -70,6 +70,18 @@ body {
   font-weight: 800;
 }
 
+.tool-button {
+  display: inline-grid;
+  place-items: center;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-strong);
+  color: var(--text);
+  font-weight: 800;
+}
+
 .eyebrow,
 .label,
 .panel-head span,
@@ -492,11 +504,18 @@ button.secondary {
 
 .tv-status {
   display: grid;
-  grid-template-columns: 1fr 1.5fr auto;
+  grid-template-columns: 1fr 1.2fr auto auto;
   gap: 18px;
   color: var(--muted);
   font-size: 1.1rem;
   font-weight: 800;
+}
+
+.tv-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .tv-status span {
@@ -623,6 +642,12 @@ button.secondary {
   }
 
   .page-links a {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 0.88rem;
+  }
+
+  .tool-button {
     min-height: 34px;
     padding: 0 10px;
     font-size: 0.88rem;

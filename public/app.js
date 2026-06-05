@@ -16,6 +16,8 @@ const mobileElapsed = document.querySelector("#mobileElapsed");
 const mobileRemaining = document.querySelector("#mobileRemaining");
 const mobileRunningCount = document.querySelector("#mobileRunningCount");
 const mobileWorkspace = document.querySelector("#mobileWorkspace");
+const fullscreenButton = document.querySelector("#fullscreenButton");
+const wakeLockButton = document.querySelector("#wakeLockButton");
 
 let currentState = null;
 let serverOnline = false;
@@ -23,6 +25,8 @@ let eventsOnline = false;
 let lastScrollTarget = "";
 let userScrolledAt = 0;
 let autoScrolling = false;
+let wakeLock = null;
+let wakeLockWanted = false;
 
 const events = new EventSource("/events");
 
@@ -63,6 +67,12 @@ cueList.addEventListener("scroll", () => {
   userScrolledAt = Date.now();
 }, { passive: true });
 
+fullscreenButton.addEventListener("click", toggleFullscreen);
+wakeLockButton.addEventListener("click", toggleWakeLock);
+document.addEventListener("fullscreenchange", syncViewControls);
+document.addEventListener("visibilitychange", handleVisibilityChange);
+syncViewControls();
+
 function render(state) {
   currentState = state || {};
   const runningIds = new Set((currentState.running || []).map((cue) => cue.uniqueID));
@@ -99,6 +109,80 @@ function render(state) {
 
   renderMobileGlance(currentState, currentGroup, updateTime);
   requestAnimationFrame(() => scrollToActiveCue(currentState));
+}
+
+async function toggleFullscreen() {
+  try {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    } else {
+      await document.documentElement.requestFullscreen();
+    }
+  } catch {
+    syncViewControls();
+  }
+}
+
+async function toggleWakeLock() {
+  if (wakeLock) {
+    wakeLockWanted = false;
+    await releaseWakeLock();
+    return;
+  }
+
+  wakeLockWanted = true;
+  await requestWakeLock();
+}
+
+async function requestWakeLock() {
+  if (!("wakeLock" in navigator) || typeof navigator.wakeLock.request !== "function") {
+    wakeLockButton.textContent = "Wake Lock Unsupported";
+    wakeLockButton.disabled = true;
+    return;
+  }
+
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release", () => {
+      wakeLock = null;
+      syncViewControls();
+    });
+  } catch {
+    wakeLock = null;
+  }
+
+  syncViewControls();
+}
+
+async function releaseWakeLock() {
+  if (!wakeLock) {
+    syncViewControls();
+    return;
+  }
+
+  const activeLock = wakeLock;
+  wakeLock = null;
+  await activeLock.release().catch(() => {});
+  syncViewControls();
+}
+
+async function handleVisibilityChange() {
+  if (document.visibilityState === "visible" && wakeLockWanted && wakeLock === null) {
+    await requestWakeLock();
+  }
+}
+
+function syncViewControls() {
+  fullscreenButton.textContent = document.fullscreenElement ? "Exit Fullscreen" : "Fullscreen";
+
+  if (!("wakeLock" in navigator) || typeof navigator.wakeLock.request !== "function") {
+    wakeLockButton.textContent = "Wake Lock Unsupported";
+    wakeLockButton.disabled = true;
+    return;
+  }
+
+  wakeLockButton.disabled = false;
+  wakeLockButton.textContent = wakeLock ? "Allow Sleep" : "Keep Awake";
 }
 
 function renderMobileGlance(state, currentGroup, updateTime) {

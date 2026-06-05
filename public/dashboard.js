@@ -8,10 +8,14 @@ const tvProgress = document.querySelector("#tvProgress");
 const tvElapsed = document.querySelector("#tvElapsed");
 const tvRemaining = document.querySelector("#tvRemaining");
 const tvRunningList = document.querySelector("#tvRunningList");
+const tvFullscreenButton = document.querySelector("#tvFullscreenButton");
+const tvWakeLockButton = document.querySelector("#tvWakeLockButton");
 
 let currentState = {};
 let serverOnline = false;
 let eventsOnline = false;
+let wakeLock = null;
+let wakeLockWanted = false;
 
 updateClock();
 setInterval(() => {
@@ -55,6 +59,12 @@ events.onerror = () => {
 pollState();
 setInterval(pollState, 3000);
 
+tvFullscreenButton.addEventListener("click", toggleFullscreen);
+tvWakeLockButton.addEventListener("click", toggleWakeLock);
+document.addEventListener("fullscreenchange", syncViewControls);
+document.addEventListener("visibilitychange", handleVisibilityChange);
+syncViewControls();
+
 function render() {
   document.body.classList.toggle("server-offline", !serverOnline);
   document.body.classList.toggle("events-offline", serverOnline && !eventsOnline);
@@ -90,6 +100,80 @@ function render() {
   tvRunningList.innerHTML = running.length
     ? running.map((cue) => `<div>${escapeHtml(cue.number || "-")} ${escapeHtml(cue.name || "Untitled cue")}</div>`).join("")
     : "Nothing running.";
+}
+
+async function toggleFullscreen() {
+  try {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    } else {
+      await document.documentElement.requestFullscreen();
+    }
+  } catch {
+    syncViewControls();
+  }
+}
+
+async function toggleWakeLock() {
+  if (wakeLock) {
+    wakeLockWanted = false;
+    await releaseWakeLock();
+    return;
+  }
+
+  wakeLockWanted = true;
+  await requestWakeLock();
+}
+
+async function requestWakeLock() {
+  if (!("wakeLock" in navigator) || typeof navigator.wakeLock.request !== "function") {
+    tvWakeLockButton.textContent = "Wake Lock Unsupported";
+    tvWakeLockButton.disabled = true;
+    return;
+  }
+
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release", () => {
+      wakeLock = null;
+      syncViewControls();
+    });
+  } catch {
+    wakeLock = null;
+  }
+
+  syncViewControls();
+}
+
+async function releaseWakeLock() {
+  if (!wakeLock) {
+    syncViewControls();
+    return;
+  }
+
+  const activeLock = wakeLock;
+  wakeLock = null;
+  await activeLock.release().catch(() => {});
+  syncViewControls();
+}
+
+async function handleVisibilityChange() {
+  if (document.visibilityState === "visible" && wakeLockWanted && wakeLock === null) {
+    await requestWakeLock();
+  }
+}
+
+function syncViewControls() {
+  tvFullscreenButton.textContent = document.fullscreenElement ? "Exit Fullscreen" : "Fullscreen";
+
+  if (!("wakeLock" in navigator) || typeof navigator.wakeLock.request !== "function") {
+    tvWakeLockButton.textContent = "Wake Lock Unsupported";
+    tvWakeLockButton.disabled = true;
+    return;
+  }
+
+  tvWakeLockButton.disabled = false;
+  tvWakeLockButton.textContent = wakeLock ? "Allow Sleep" : "Keep Awake";
 }
 
 async function pollState() {
