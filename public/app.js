@@ -27,6 +27,9 @@ let userScrolledAt = 0;
 let autoScrolling = false;
 let wakeLock = null;
 let wakeLockWanted = false;
+const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
 
 const events = new EventSource("/events");
 
@@ -112,6 +115,16 @@ function render(state) {
 }
 
 async function toggleFullscreen() {
+  if (isIos) {
+    if (!isStandalone) {
+      window.alert("On iPhone/iPad, add this page to the Home Screen for the closest fullscreen experience.");
+      return;
+    }
+    document.body.classList.toggle("focus-mode");
+    syncViewControls();
+    return;
+  }
+
   try {
     if (document.fullscreenElement) {
       await document.exitFullscreen();
@@ -173,7 +186,15 @@ async function handleVisibilityChange() {
 }
 
 function syncViewControls() {
-  fullscreenButton.textContent = document.fullscreenElement ? "Exit Fullscreen" : "Fullscreen";
+  if (isIos) {
+    if (isStandalone) {
+      fullscreenButton.textContent = document.body.classList.contains("focus-mode") ? "Exit Focus Mode" : "Focus Mode";
+    } else {
+      fullscreenButton.textContent = "Add to Home Screen";
+    }
+  } else {
+    fullscreenButton.textContent = document.fullscreenElement ? "Exit Fullscreen" : "Fullscreen";
+  }
 
   if (!("wakeLock" in navigator) || typeof navigator.wakeLock.request !== "function") {
     wakeLockButton.textContent = "Wake Lock Unsupported";
