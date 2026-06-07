@@ -5,16 +5,22 @@ import {
   publicStateSnapshot,
   syncSignatures
 } from "./state.js";
+import { registerLiveViewer, touchLiveViewers } from "./viewers.js";
 
 const clients = new Set();
 
-export function handleEvents(response) {
+export function handleEvents(request, response) {
   response.writeHead(200, {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
     Connection: "keep-alive"
   });
   response.write(formatEvent("snapshot", publicStateSnapshot()));
+  const url = new URL(request.url, `http://${request.headers.host}`);
+  registerLiveViewer(request, response, {
+    page: url.searchParams.get("page") || "monitor",
+    clientId: url.searchParams.get("clientId") || ""
+  });
   clients.add(response);
   response.on("close", () => clients.delete(response));
 }
@@ -37,6 +43,7 @@ export function broadcastChanges() {
 }
 
 export function broadcastHeartbeat() {
+  touchLiveViewers();
   broadcastEvent("heartbeat", publicStatePatch());
 }
 

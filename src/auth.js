@@ -3,6 +3,8 @@ import { ADMIN_PASSWORD, ADMIN_USER } from "./config.js";
 export function isAdminPath(pathname) {
   return pathname === "/admin.html" ||
     pathname === "/admin.js" ||
+    pathname === "/viewers.html" ||
+    pathname === "/viewers.js" ||
     pathname.startsWith("/api/admin/");
 }
 

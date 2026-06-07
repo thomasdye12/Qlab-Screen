@@ -18,6 +18,8 @@ const mobileRunningCount = document.querySelector("#mobileRunningCount");
 const mobileWorkspace = document.querySelector("#mobileWorkspace");
 const fullscreenButton = document.querySelector("#fullscreenButton");
 const wakeLockButton = document.querySelector("#wakeLockButton");
+const VIEWER_PAGE = "monitor";
+const VIEWER_CLIENT_ID_KEY = "qlab-screen-client-id";
 
 let currentState = null;
 let serverOnline = false;
@@ -30,8 +32,9 @@ let wakeLockWanted = true;
 const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+const viewerClientId = getViewerClientId();
 
-const events = new EventSource("/events");
+const events = new EventSource(`/events?clientId=${encodeURIComponent(viewerClientId)}&page=${encodeURIComponent(VIEWER_PAGE)}`);
 
 events.onopen = () => {
   eventsOnline = true;
@@ -75,7 +78,13 @@ wakeLockButton.addEventListener("click", toggleWakeLock);
 document.addEventListener("fullscreenchange", syncViewControls);
 document.addEventListener("visibilitychange", handleVisibilityChange);
 document.addEventListener("pointerdown", ensureWakeLockOnFirstInteraction, { once: true, passive: true });
+window.addEventListener("pagehide", () => sendPresence(false));
+window.addEventListener("beforeunload", () => sendPresence(false));
 syncViewControls();
+sendPresence(document.visibilityState === "visible");
+setInterval(() => {
+  sendPresence(document.visibilityState === "visible");
+}, 15000);
 
 function render(state) {
   currentState = state || {};
@@ -187,6 +196,7 @@ async function releaseWakeLock() {
 }
 
 async function handleVisibilityChange() {
+  sendPresence(document.visibilityState === "visible");
   if (document.visibilityState === "visible" && wakeLockWanted && wakeLock === null) {
     await requestWakeLock();
   }
@@ -375,7 +385,7 @@ function formatTime(seconds) {
 function getCueDisplayName(cue) {
   if (!cue) return "";
   if (cue.type === "Timecode") return cue.listName || cue.name || cue.number || "Timecode";
-  if (cue.type === "Memo") return cue.name || cue.listName || "Memo";
+  if (cue.type === "Memo") return cue.name || cue.listName || "";
   if (cue.type === "Cue List" || cue.type === "Group") return cue.name || cue.listName || cue.number || cue.type;
   return cue.name || cue.listName || cue.number || cue.type || "";
 }
@@ -421,4 +431,33 @@ function escapeHtml(value) {
     '"': "&quot;",
     "'": "&#039;"
   })[char]);
+}
+
+function getViewerClientId() {
+  const existing = localStorage.getItem(VIEWER_CLIENT_ID_KEY);
+  if (existing) return existing;
+  const created = `viewer-${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
+  localStorage.setItem(VIEWER_CLIENT_ID_KEY, created);
+  return created;
+}
+
+function sendPresence(visible) {
+  const payload = JSON.stringify({
+    clientId: viewerClientId,
+    page: VIEWER_PAGE,
+    visible
+  });
+
+  if (navigator.sendBeacon) {
+    const blob = new Blob([payload], { type: "application/json" });
+    navigator.sendBeacon("/api/presence", blob);
+    return;
+  }
+
+  fetch("/api/presence", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: payload,
+    keepalive: true
+  }).catch(() => {});
 }

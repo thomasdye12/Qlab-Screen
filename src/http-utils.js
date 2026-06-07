@@ -14,6 +14,18 @@ export function sendJson(response, data, status = 200) {
   response.end(JSON.stringify(data));
 }
 
+export function getClientIp(request) {
+  const forwardedFor = String(request.headers["x-forwarded-for"] || "").trim();
+  if (forwardedFor) {
+    return forwardedFor.split(",")[0].trim();
+  }
+
+  const realIp = String(request.headers["x-real-ip"] || "").trim();
+  if (realIp) return realIp;
+
+  return request.socket?.remoteAddress || "";
+}
+
 export async function serveStatic(pathname, response) {
   const requested = pathname === "/" ? "/index.html" : pathname;
   const filePath = normalize(join(PUBLIC_DIR, requested));

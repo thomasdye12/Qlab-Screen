@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>QLab Screen Viewers</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell admin-shell">
+      <section class="connection-panel" aria-label="Viewer connections">
+        <div>
+          <p class="eyebrow">Admin</p>
+          <h1>Live viewers</h1>
+        </div>
+        <nav class="page-links" aria-label="Pages">
+          <a href="/">Monitor</a>
+          <a href="/dashboard.html">TV Dashboard</a>
+          <a href="/admin.html">Settings</a>
+        </nav>
+      </section>
+
+      <section class="panel admin-panel">
+        <div class="panel-head">
+          <h2>Connected devices</h2>
+          <span id="viewerCount">0 live</span>
+        </div>
+        <div id="viewerList" class="viewer-list empty">No live viewers.</div>
+      </section>
+    </main>
+
+    <script src="/viewers.js" type="module"></script>
+  </body>
+</html>

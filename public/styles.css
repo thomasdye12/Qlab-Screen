@@ -3,6 +3,7 @@
   --bg: #050505;
   --panel: #101010;
   --panel-strong: #181818;
+  --panel-qlab: #141414;
   --line: #383838;
   --text: #f7f7f7;
   --muted: #a7a7a7;
@@ -66,7 +67,7 @@ body.focus-mode .running-list {
 .status-strip,
 .panel {
   border: 1px solid var(--line);
-  background: var(--panel);
+  background: linear-gradient(180deg, var(--panel-qlab), var(--panel));
   border-radius: 8px;
 }
 
@@ -75,7 +76,8 @@ body.focus-mode .running-list {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 24px;
   align-items: center;
-  padding: 18px 22px;
+  padding: 16px 20px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .hero-block {
@@ -133,8 +135,8 @@ p {
 h1 {
   margin-top: 4px;
   max-width: min(100%, 1050px);
-  font-size: clamp(2.8rem, 7vw, 6.8rem);
-  line-height: 0.98;
+  font-size: clamp(2.5rem, 6.3vw, 6rem);
+  line-height: 1;
   overflow-wrap: anywhere;
 }
 
@@ -277,6 +279,7 @@ button.secondary {
   align-items: center;
   min-height: 48px;
   padding: 8px 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
 }
 
 .cue-title,
@@ -332,20 +335,27 @@ button.secondary {
 }
 
 .group-row {
-  min-height: 62px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-  background: rgba(255, 255, 255, 0.03);
+  min-height: 68px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .group-row .cue-name {
-  font-size: 1.05rem;
+  font-size: 1.12rem;
   font-weight: 800;
   color: var(--text);
+  letter-spacing: 0.01em;
 }
 
 .group-row .cue-number {
   font-size: 1rem;
+}
+
+.group-row .type {
+  color: #d4d4d4;
+  font-weight: 700;
 }
 
 .cue-number {
@@ -406,7 +416,7 @@ button.secondary {
   gap: 10px;
   padding: 16px;
   border-left: 4px solid var(--running);
-  background: var(--running-soft);
+  background: linear-gradient(180deg, rgba(74, 222, 128, 0.18), rgba(74, 222, 128, 0.1));
 }
 
 .run-top {
@@ -440,6 +450,43 @@ button.secondary {
 .empty {
   padding: 22px;
   color: var(--muted);
+}
+
+.viewer-list {
+  display: grid;
+}
+
+.viewer-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent);
+}
+
+.viewer-main,
+.viewer-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.viewer-main strong {
+  font-size: 1rem;
+}
+
+.viewer-main span,
+.viewer-meta,
+.viewer-forwarded,
+.viewer-agent {
+  color: var(--muted);
+}
+
+.viewer-forwarded,
+.viewer-agent {
+  font-size: 0.86rem;
+  overflow-wrap: anywhere;
 }
 
 .mobile-glance {
@@ -822,5 +869,11 @@ button.secondary {
 
   .badges {
     justify-content: flex-start;
+  }
+
+  .viewer-main,
+  .viewer-meta {
+    display: grid;
+    justify-content: stretch;
   }
 }

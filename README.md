@@ -16,14 +16,21 @@ The app connects to QLab over TCP OSC, reads cue information, watches what is ru
    - elapsed/remaining time where QLab exposes it
    - current cue group
    - automatic scrolling to the active cue
+   - mobile at-a-glance layout
+   - QLab-inspired cue styling with larger group rows and cue color swatches
+   - blank memo cues left blank instead of being labeled as untitled
 
 - TV dashboard view for full-screen display.
+- Live viewers page showing who is connected to the monitor and dashboard.
 - Lightweight browser updates:
 
    - full cue list is sent only on initial load or cue-list changes
    - routine updates send small status/running/timing patches
 
 - Browser-to-server disconnect detection.
+- Fullscreen and keep-awake controls for supported browsers.
+- iPhone/iPad fallback flow using Add to Home Screen and Focus Mode.
+- Proxy-aware viewer tracking using forwarded client IP headers.
 - No QLab playback, edit, stop, start, or control commands.
 
 ## Screens
@@ -31,6 +38,7 @@ The app connects to QLab over TCP OSC, reads cue information, watches what is ru
 - Main monitor: `http://localhost:3030/`
 - Admin settings: `http://localhost:3030/admin.html`
 - TV dashboard: `http://localhost:3030/dashboard.html`
+- Live viewers: `http://localhost:3030/viewers.html`
 
 Admin uses HTTP Basic Auth.
 
@@ -42,6 +50,41 @@ password: thomas
 ```
 
 Change these with environment variables before running in production.
+
+## What The Views Show
+
+### Main monitor
+
+The main monitor is the operator-friendly page. It focuses on:
+
+- current workspace name
+- current cue group
+- running cues with live timing
+- full cue order
+- auto-scroll to the currently active cue
+
+On smaller screens it switches to a compact mobile layout so the running cue and cue list stay visible without the title area taking over the page.
+
+### TV dashboard
+
+The TV dashboard is a simplified full-screen view for relay screens and confidence displays. It emphasizes:
+
+- current cue group
+- current active cue
+- progress/timing
+- running cue summary
+
+### Live viewers
+
+The live viewers page is admin-protected and shows who is currently connected to the monitor or dashboard, including:
+
+- page type
+- IP address
+- forwarded IP header information when behind a reverse proxy
+- whether the page is currently visible or in the background
+- connected time
+- last-seen time
+- user agent
 
 ## QLab Requirements
 
@@ -106,6 +149,29 @@ Example `settings.json`:
 
 You normally do not need to edit this file directly. Use the admin page instead.
 
+## Reverse Proxy Notes
+
+QLab Connect can sit behind a reverse proxy. For live viewer tracking, the app prefers these headers in order:
+
+1. `X-Forwarded-For`
+2. `X-Real-IP`
+3. the direct socket address
+
+If you want the viewers page to show real remote client IPs, make sure your proxy forwards `X-Forwarded-For` or `X-Real-IP`.
+
+## Browser Notes
+
+- Fullscreen works in browsers that support the Fullscreen API.
+- Keep Awake uses the Screen Wake Lock API where supported.
+- iPhone/iPad Safari does not support normal webpage fullscreen. The best experience there is:
+
+  1. open the page in Safari
+  2. use **Add to Home Screen**
+  3. launch it from the Home Screen
+  4. use **Focus Mode**
+
+- The app tries to keep the device awake after user interaction where the browser allows it, but iOS still applies platform limits.
+
 ## Project Structure
 
 ```text
@@ -120,6 +186,7 @@ src/events.js             Server-Sent Events snapshots, patches, heartbeat
 src/qlab.js               QLab TCP OSC connection, polling, timing
 src/osc.js                OSC and SLIP encode/decode helpers
 src/cues.js               Cue flattening helpers
+src/viewers.js            Live viewer tracking and presence state
 public/                   Browser UI
 deploy/qlabconnect.service systemd unit
 scripts/install-ubuntu.sh Ubuntu installer
@@ -188,10 +255,13 @@ sudo npm ci --omit=dev
 sudo systemctl restart qlabconnect
 ```
 
+If you only changed frontend files in `public/`, a restart is usually not required. After `git pull`, the new static files will be served on the next page load. Restart the service when backend files such as `server.js`, `src/*.js`, `package.json`, or environment settings change.
+
 ## Security Notes
 
 - This app is intended for trusted production/show networks.
 - Admin settings are protected with HTTP Basic Auth.
+- The live viewers page is also protected with HTTP Basic Auth.
 - Use a strong `ADMIN_PASSWORD` in `/etc/qlabconnect.env`.
 - Use a QLab passcode with view-only access.
 - Do not expose this service directly to the public internet.

@@ -5,6 +5,7 @@ import { sendJson, readBody, serveStatic } from "./http-utils.js";
 import { connectToQlab, disconnectQlab } from "./qlab.js";
 import { getSettings, publicSettings, updateSettings } from "./settings.js";
 import { publicStatePatch, state } from "./state.js";
+import { listViewers, updateViewerPresence } from "./viewers.js";
 
 export function createHttpServer() {
   return http.createServer(async (request, response) => {
@@ -31,6 +32,14 @@ export function createHttpServer() {
         return handleSaveSettings(request, response);
       }
 
+      if (url.pathname === "/api/admin/viewers" && request.method === "GET") {
+        return sendJson(response, { viewers: listViewers() });
+      }
+
+      if (url.pathname === "/api/presence" && request.method === "POST") {
+        return handlePresence(request, response);
+      }
+
       if (url.pathname === "/api/state") {
         return sendJson(response, state);
       }
@@ -40,7 +49,7 @@ export function createHttpServer() {
       }
 
       if (url.pathname === "/events") {
-        return handleEvents(response);
+        return handleEvents(request, response);
       }
 
       return serveStatic(url.pathname, response);
@@ -108,4 +117,10 @@ async function handleSaveSettings(request, response) {
 async function handleDisconnect(response) {
   await disconnectQlab();
   sendJson(response, state);
+}
+
+async function handlePresence(request, response) {
+  const body = await readBody(request);
+  updateViewerPresence(request, body);
+  sendJson(response, { ok: true });
 }

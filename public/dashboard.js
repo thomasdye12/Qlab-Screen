@@ -10,6 +10,8 @@ const tvRemaining = document.querySelector("#tvRemaining");
 const tvRunningList = document.querySelector("#tvRunningList");
 const tvFullscreenButton = document.querySelector("#tvFullscreenButton");
 const tvWakeLockButton = document.querySelector("#tvWakeLockButton");
+const VIEWER_PAGE = "dashboard";
+const VIEWER_CLIENT_ID_KEY = "qlab-screen-client-id";
 
 let currentState = {};
 let serverOnline = false;
@@ -19,13 +21,14 @@ let wakeLockWanted = false;
 const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+const viewerClientId = getViewerClientId();
 
 updateClock();
 setInterval(() => {
   updateClock();
 }, 1000);
 
-const events = new EventSource("/events");
+const events = new EventSource(`/events?clientId=${encodeURIComponent(viewerClientId)}&page=${encodeURIComponent(VIEWER_PAGE)}`);
 
 events.onopen = () => {
   eventsOnline = true;
@@ -66,7 +69,14 @@ tvFullscreenButton.addEventListener("click", toggleFullscreen);
 tvWakeLockButton.addEventListener("click", toggleWakeLock);
 document.addEventListener("fullscreenchange", syncViewControls);
 document.addEventListener("visibilitychange", handleVisibilityChange);
+document.addEventListener("pointerdown", ensureWakeLockOnFirstInteraction, { once: true, passive: true });
+window.addEventListener("pagehide", () => sendPresence(false));
+window.addEventListener("beforeunload", () => sendPresence(false));
 syncViewControls();
+sendPresence(document.visibilityState === "visible");
+setInterval(() => {
+  sendPresence(document.visibilityState === "visible");
+}, 15000);
 
 function render() {
   document.body.classList.toggle("server-offline", !serverOnline);
@@ -95,13 +105,13 @@ function render() {
   tvWorkspace.textContent = currentState.workspaceName || currentState.workspaceId || "-";
   tvGroup.textContent = group || (running.length ? "Ungrouped cue" : "Waiting for QLab");
   tvCueNumber.textContent = primary?.number || "-";
-  tvCueName.textContent = primary?.name || "No cue running";
+  tvCueName.textContent = fullCue ? getCueDisplayName(fullCue) : "No cue running";
   tvProgress.style.width = `${progress}%`;
   tvElapsed.textContent = `${formatTime(elapsed)} elapsed`;
   tvRemaining.textContent = remaining == null ? "duration unavailable" : `${formatTime(remaining)} remaining`;
 
   tvRunningList.innerHTML = running.length
-    ? running.map((cue) => `<div>${escapeHtml(cue.number || "-")} ${escapeHtml(cue.name || "Untitled cue")}</div>`).join("")
+    ? running.map((cue) => `<div>${escapeHtml(cue.number || "-")} ${escapeHtml(getCueDisplayName(cue))}</div>`).join("")
     : "Nothing running.";
 }
 
@@ -138,6 +148,12 @@ async function toggleWakeLock() {
   await requestWakeLock();
 }
 
+async function ensureWakeLockOnFirstInteraction() {
+  if (wakeLockWanted && wakeLock === null) {
+    await requestWakeLock();
+  }
+}
+
 async function requestWakeLock() {
   if (!("wakeLock" in navigator) || typeof navigator.wakeLock.request !== "function") {
     tvWakeLockButton.textContent = "Wake Lock Unsupported";
@@ -171,6 +187,7 @@ async function releaseWakeLock() {
 }
 
 async function handleVisibilityChange() {
+  sendPresence(document.visibilityState === "visible");
   if (document.visibilityState === "visible" && wakeLockWanted && wakeLock === null) {
     await requestWakeLock();
   }
@@ -239,6 +256,14 @@ function findGroupName(cue, cueMap) {
   return cue.listName || "";
 }
 
+function getCueDisplayName(cue) {
+  if (!cue) return "";
+  if (cue.type === "Timecode") return cue.listName || cue.name || cue.number || "Timecode";
+  if (cue.type === "Memo") return cue.name || cue.listName || "";
+  if (cue.type === "Cue List" || cue.type === "Group") return cue.name || cue.listName || cue.number || cue.type;
+  return cue.name || cue.listName || cue.number || cue.type || "";
+}
+
 function formatTime(seconds) {
   if (seconds == null || Number.isNaN(Number(seconds))) return "--:--.-";
   const value = Math.max(0, Number(seconds));
@@ -256,6 +281,35 @@ function escapeHtml(value) {
     '"': "&quot;",
     "'": "&#039;"
   })[char]);
+}
+
+function getViewerClientId() {
+  const existing = localStorage.getItem(VIEWER_CLIENT_ID_KEY);
+  if (existing) return existing;
+  const created = `viewer-${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
+  localStorage.setItem(VIEWER_CLIENT_ID_KEY, created);
+  return created;
+}
+
+function sendPresence(visible) {
+  const payload = JSON.stringify({
+    clientId: viewerClientId,
+    page: VIEWER_PAGE,
+    visible
+  });
+
+  if (navigator.sendBeacon) {
+    const blob = new Blob([payload], { type: "application/json" });
+    navigator.sendBeacon("/api/presence", blob);
+    return;
+  }
+
+  fetch("/api/presence", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: payload,
+    keepalive: true
+  }).catch(() => {});
 }
 
 function updateClock() {
