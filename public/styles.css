@@ -75,7 +75,11 @@ body.focus-mode .running-list {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 24px;
   align-items: center;
-  padding: 22px;
+  padding: 18px 22px;
+}
+
+.hero-block {
+  min-width: 0;
 }
 
 .page-links {
@@ -275,6 +279,37 @@ button.secondary {
   padding: 8px 14px;
 }
 
+.cue-title,
+.run-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.cue-copy,
+.run-main {
+  min-width: 0;
+}
+
+.cue-detail,
+.run-detail {
+  color: var(--muted);
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cue-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--cue-swatch);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
 .cue-row.running {
   background: var(--running-soft);
   box-shadow: inset 4px 0 0 var(--running);
@@ -291,8 +326,26 @@ button.secondary {
 
 .cue-row.disabled .cue-number,
 .cue-row.disabled .cue-name,
-.cue-row.disabled .type {
+.cue-row.disabled .type,
+.cue-row.disabled .cue-detail {
   color: var(--danger);
+}
+
+.group-row {
+  min-height: 62px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.group-row .cue-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.group-row .cue-number {
+  font-size: 1rem;
 }
 
 .cue-number {
@@ -358,7 +411,7 @@ button.secondary {
 
 .run-top {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
   align-items: baseline;
 }
@@ -474,6 +527,10 @@ button.secondary {
   .connection-panel,
   .boards,
   .status-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .boards {
     grid-template-columns: 1fr;
   }
 
@@ -656,32 +713,39 @@ button.secondary {
 @media (max-width: 640px) {
   .shell {
     width: min(100vw - 20px, 1440px);
-    padding: 10px 0;
+    padding: 8px 0;
   }
 
   .connection-panel {
-    gap: 14px;
-    padding: 16px;
+    gap: 8px;
+    padding: 12px 14px;
   }
 
   .page-links {
     align-self: auto;
+    gap: 6px;
   }
 
   .page-links a {
-    min-height: 34px;
-    padding: 0 10px;
-    font-size: 0.88rem;
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: 0.8rem;
   }
 
   .tool-button {
-    min-height: 34px;
-    padding: 0 10px;
-    font-size: 0.88rem;
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: 0.8rem;
   }
 
   h1 {
-    font-size: clamp(2rem, 12vw, 3.6rem);
+    max-width: 100%;
+    font-size: clamp(1.45rem, 7vw, 2.1rem);
+    line-height: 1.02;
+  }
+
+  .eyebrow {
+    font-size: 0.68rem;
   }
 
   .status-strip {
@@ -697,21 +761,24 @@ button.secondary {
     gap: 10px;
   }
 
-  .boards .panel:first-child {
+  .running-panel {
+    order: -1;
+  }
+
+  .cue-panel {
     min-height: 0;
   }
 
-  .boards .panel:last-child {
-    order: -1;
+  .running-panel {
     min-height: 0;
   }
 
   .cue-list {
-    max-height: 50vh;
+    max-height: 56vh;
   }
 
   .running-list {
-    max-height: 32vh;
+    max-height: 36vh;
   }
 
   .cue-row {
@@ -722,6 +789,14 @@ button.secondary {
 
   .cue-row .type {
     display: none;
+  }
+
+  .cue-title {
+    gap: 8px;
+  }
+
+  .cue-detail {
+    white-space: normal;
   }
 
   .cue-row .badges {
@@ -738,6 +813,11 @@ button.secondary {
 
   .run-top .timer {
     grid-column: 1 / -1;
+  }
+
+  .run-main {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 
   .badges {

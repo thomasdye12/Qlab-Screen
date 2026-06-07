@@ -26,7 +26,7 @@ let lastScrollTarget = "";
 let userScrolledAt = 0;
 let autoScrolling = false;
 let wakeLock = null;
-let wakeLockWanted = false;
+let wakeLockWanted = true;
 const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
@@ -74,6 +74,7 @@ fullscreenButton.addEventListener("click", toggleFullscreen);
 wakeLockButton.addEventListener("click", toggleWakeLock);
 document.addEventListener("fullscreenchange", syncViewControls);
 document.addEventListener("visibilitychange", handleVisibilityChange);
+document.addEventListener("pointerdown", ensureWakeLockOnFirstInteraction, { once: true, passive: true });
 syncViewControls();
 
 function render(state) {
@@ -145,6 +146,12 @@ async function toggleWakeLock() {
 
   wakeLockWanted = true;
   await requestWakeLock();
+}
+
+async function ensureWakeLockOnFirstInteraction() {
+  if (wakeLockWanted && wakeLock === null) {
+    await requestWakeLock();
+  }
 }
 
 async function requestWakeLock() {
@@ -220,7 +227,7 @@ function renderMobileGlance(state, currentGroup, updateTime) {
   mobileLastUpdate.textContent = updateTime;
   mobileGroup.textContent = currentGroup;
   mobileCueNumber.textContent = fullCue?.number || "-";
-  mobileCueName.textContent = fullCue?.name || "No cue running";
+  mobileCueName.textContent = fullCue ? getCueDisplayName(fullCue) : "No cue running";
   mobileProgress.style.width = `${progress}%`;
   mobileElapsed.textContent = `${formatTime(elapsed)} elapsed`;
   mobileRemaining.textContent = remaining == null ? "duration unavailable" : `${formatTime(remaining)} remaining`;
@@ -251,11 +258,20 @@ function mergeStatePatch(previousState, patch) {
 
 function renderCue(cue, isRunning) {
   const isDisabled = Number(cue.armed) === 0;
+  const isGroup = cue.type === "Group" || cue.type === "Cue List";
+  const displayName = getCueDisplayName(cue);
+  const detail = getCueDetail(cue);
   return `
-    <article class="cue-row ${isRunning ? "running" : ""} ${isDisabled ? "disabled" : ""}" data-cue-id="${escapeHtml(cue.uniqueID)}" data-parent-id="${escapeHtml(cue.parentId || "")}" style="--depth:${Number(cue.depth || 0)}">
+    <article class="cue-row ${isRunning ? "running" : ""} ${isDisabled ? "disabled" : ""} ${isGroup ? "group-row" : ""}" data-cue-id="${escapeHtml(cue.uniqueID)}" data-parent-id="${escapeHtml(cue.parentId || "")}" style="--depth:${Number(cue.depth || 0)}">
       <div class="cue-number">${escapeHtml(cue.number || "-")}</div>
-      <div class="cue-name cue-indent">${escapeHtml(cue.name || "Untitled cue")}</div>
-      <div class="type">${escapeHtml(cue.type || "cue")}</div>
+      <div class="cue-title cue-indent">
+        ${renderCueSwatch(cue)}
+        <div class="cue-copy">
+          <div class="cue-name">${escapeHtml(displayName)}</div>
+          ${detail ? `<div class="cue-detail">${escapeHtml(detail)}</div>` : ""}
+        </div>
+      </div>
+      <div class="type">${escapeHtml(formatCueType(cue.type || "cue"))}</div>
       <div class="badges">
         ${cue.flagged ? '<span class="badge warn">F</span>' : ""}
         ${isDisabled ? '<span class="badge danger">D</span>' : ""}
@@ -325,12 +341,17 @@ function renderRunningCue(cue) {
   const duration = Number(timing.duration || 0);
   const progress = duration > 0 ? Math.min(100, Math.max(0, (elapsed / duration) * 100)) : 0;
   const remaining = duration > 0 ? Math.max(0, duration - elapsed) : null;
+  const displayName = getCueDisplayName(cue);
+  const detail = getCueDetail(cue);
 
   return `
     <article class="run-card">
       <div class="run-top">
         <strong class="cue-number">${escapeHtml(cue.number || "-")}</strong>
-        <strong class="run-title">${escapeHtml(cue.name || "Untitled cue")}</strong>
+        <div class="run-main">
+          <strong class="run-title">${escapeHtml(displayName)}</strong>
+          ${detail ? `<div class="run-detail">${escapeHtml(detail)}</div>` : ""}
+        </div>
         <span class="timer">${formatTime(elapsed)}</span>
       </div>
       <div class="progress" aria-hidden="true"><span style="--progress:${progress}%"></span></div>
@@ -349,6 +370,47 @@ function formatTime(seconds) {
   const secs = Math.floor(value % 60);
   const tenths = Math.floor((value % 1) * 10);
   return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}.${tenths}`;
+}
+
+function getCueDisplayName(cue) {
+  if (!cue) return "";
+  if (cue.type === "Timecode") return cue.listName || cue.name || cue.number || "Timecode";
+  if (cue.type === "Memo") return cue.name || cue.listName || "Memo";
+  if (cue.type === "Cue List" || cue.type === "Group") return cue.name || cue.listName || cue.number || cue.type;
+  return cue.name || cue.listName || cue.number || cue.type || "";
+}
+
+function getCueDetail(cue) {
+  if (!cue) return "";
+  if (cue.type === "Timecode") return cue.name && cue.name !== cue.listName ? cue.name : "";
+  if (cue.type === "Memo") return "";
+  if (!cue.name && cue.listName && cue.listName !== cue.number) return cue.listName;
+  return "";
+}
+
+function formatCueType(type) {
+  return type === "Cue List" ? "list" : String(type || "cue").toLowerCase();
+}
+
+function renderCueSwatch(cue) {
+  const color = mapCueColor(cue.colorName);
+  if (!color) return "";
+  return `<span class="cue-swatch" style="--cue-swatch:${escapeHtml(color)}"></span>`;
+}
+
+function mapCueColor(colorName) {
+  const value = String(colorName || "").toLowerCase();
+  const map = {
+    red: "#ef4444",
+    orange: "#f97316",
+    yellow: "#facc15",
+    green: "#4ade80",
+    blue: "#60a5fa",
+    purple: "#c084fc",
+    magenta: "#f472b6",
+    gray: "#9ca3af"
+  };
+  return map[value] || "";
 }
 
 function escapeHtml(value) {
