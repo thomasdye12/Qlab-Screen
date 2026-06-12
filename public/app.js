@@ -24,11 +24,14 @@ const VIEWER_CLIENT_ID_KEY = "qlab-screen-client-id";
 let currentState = null;
 let serverOnline = false;
 let eventsOnline = false;
+let lastEventAt = 0;
 let lastScrollTarget = "";
 let userScrolledAt = 0;
 let autoScrolling = false;
 let wakeLock = null;
-let wakeLockWanted = true;
+let wakeLockWanted = false;
+let lastCueVersion = -1;
+let lastRunningIdsKey = "";
 const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
@@ -39,24 +42,28 @@ const events = new EventSource(`/events?clientId=${encodeURIComponent(viewerClie
 events.onopen = () => {
   eventsOnline = true;
   serverOnline = true;
+  lastEventAt = Date.now();
   render(currentState);
 };
 
 events.addEventListener("snapshot", (event) => {
   eventsOnline = true;
   serverOnline = true;
+  lastEventAt = Date.now();
   render(JSON.parse(event.data));
 });
 
 events.addEventListener("patch", (event) => {
   eventsOnline = true;
   serverOnline = true;
+  lastEventAt = Date.now();
   render(mergeStatePatch(currentState, JSON.parse(event.data)));
 });
 
 events.addEventListener("heartbeat", (event) => {
   eventsOnline = true;
   serverOnline = true;
+  lastEventAt = Date.now();
   render(mergeStatePatch(currentState, JSON.parse(event.data)));
 });
 
@@ -66,7 +73,7 @@ events.onerror = () => {
 };
 
 pollState();
-setInterval(pollState, 3000);
+setInterval(pollState, 5000);
 
 cueList.addEventListener("scroll", () => {
   if (autoScrolling) return;
@@ -83,12 +90,14 @@ window.addEventListener("beforeunload", () => sendPresence(false));
 syncViewControls();
 sendPresence(document.visibilityState === "visible");
 setInterval(() => {
+  if (document.visibilityState !== "visible") return;
   sendPresence(document.visibilityState === "visible");
-}, 15000);
+}, 30000);
 
 function render(state) {
   currentState = state || {};
   const runningIds = new Set((currentState.running || []).map((cue) => cue.uniqueID));
+  const runningIdsKey = Array.from(runningIds).sort().join("|");
   document.body.classList.toggle("server-offline", !serverOnline);
   document.body.classList.toggle("events-offline", serverOnline && !eventsOnline);
   document.body.classList.toggle("qlab-connected", Boolean(serverOnline && currentState.connected && !currentState.lastError));
@@ -110,10 +119,7 @@ function render(state) {
   lastUpdate.textContent = updateTime;
 
   cueCount.textContent = `${(currentState.cues || []).length} cues`;
-  cueList.classList.toggle("empty", !currentState.cues?.length);
-  cueList.innerHTML = currentState.cues?.length
-    ? currentState.cues.map((cue) => renderCue(cue, runningIds.has(cue.uniqueID))).join("")
-    : "No cues loaded.";
+  renderCueList(runningIds, runningIdsKey);
 
   runningList.classList.toggle("empty", !currentState.running?.length);
   runningList.innerHTML = currentState.running?.length
@@ -122,6 +128,20 @@ function render(state) {
 
   renderMobileGlance(currentState, currentGroup, updateTime);
   requestAnimationFrame(() => scrollToActiveCue(currentState));
+}
+
+function renderCueList(runningIds, runningIdsKey) {
+  const cues = currentState.cues || [];
+  const cueVersion = Number(currentState.cuesVersion || 0);
+  if (cueVersion === lastCueVersion && runningIdsKey === lastRunningIdsKey) return;
+
+  cueList.classList.toggle("empty", cues.length === 0);
+  cueList.innerHTML = cues.length
+    ? cues.map((cue) => renderCue(cue, runningIds.has(cue.uniqueID))).join("")
+    : "No cues loaded.";
+
+  lastCueVersion = cueVersion;
+  lastRunningIdsKey = runningIdsKey;
 }
 
 async function toggleFullscreen() {
@@ -197,9 +217,8 @@ async function releaseWakeLock() {
 
 async function handleVisibilityChange() {
   sendPresence(document.visibilityState === "visible");
-  if (document.visibilityState === "visible" && wakeLockWanted && wakeLock === null) {
-    await requestWakeLock();
-  }
+  if (document.visibilityState !== "visible") return;
+  if (wakeLockWanted && wakeLock === null) await requestWakeLock();
 }
 
 function syncViewControls() {
@@ -246,6 +265,7 @@ function renderMobileGlance(state, currentGroup, updateTime) {
 }
 
 async function pollState() {
+  if (eventsOnline && Date.now() - lastEventAt < 20000) return;
   try {
     const response = await fetch("/api/status", { cache: "no-store" });
     if (!response.ok) throw new Error("State request failed.");

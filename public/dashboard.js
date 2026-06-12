@@ -16,6 +16,7 @@ const VIEWER_CLIENT_ID_KEY = "qlab-screen-client-id";
 let currentState = {};
 let serverOnline = false;
 let eventsOnline = false;
+let lastEventAt = 0;
 let wakeLock = null;
 let wakeLockWanted = false;
 const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
@@ -33,12 +34,14 @@ const events = new EventSource(`/events?clientId=${encodeURIComponent(viewerClie
 events.onopen = () => {
   eventsOnline = true;
   serverOnline = true;
+  lastEventAt = Date.now();
   render();
 };
 
 events.addEventListener("snapshot", (event) => {
   eventsOnline = true;
   serverOnline = true;
+  lastEventAt = Date.now();
   currentState = JSON.parse(event.data);
   render();
 });
@@ -46,6 +49,7 @@ events.addEventListener("snapshot", (event) => {
 events.addEventListener("patch", (event) => {
   eventsOnline = true;
   serverOnline = true;
+  lastEventAt = Date.now();
   currentState = mergeStatePatch(currentState, JSON.parse(event.data));
   render();
 });
@@ -53,6 +57,7 @@ events.addEventListener("patch", (event) => {
 events.addEventListener("heartbeat", (event) => {
   eventsOnline = true;
   serverOnline = true;
+  lastEventAt = Date.now();
   currentState = mergeStatePatch(currentState, JSON.parse(event.data));
   render();
 });
@@ -63,7 +68,7 @@ events.onerror = () => {
 };
 
 pollState();
-setInterval(pollState, 3000);
+setInterval(pollState, 5000);
 
 tvFullscreenButton.addEventListener("click", toggleFullscreen);
 tvWakeLockButton.addEventListener("click", toggleWakeLock);
@@ -75,8 +80,9 @@ window.addEventListener("beforeunload", () => sendPresence(false));
 syncViewControls();
 sendPresence(document.visibilityState === "visible");
 setInterval(() => {
+  if (document.visibilityState !== "visible") return;
   sendPresence(document.visibilityState === "visible");
-}, 15000);
+}, 30000);
 
 function render() {
   document.body.classList.toggle("server-offline", !serverOnline);
@@ -188,9 +194,8 @@ async function releaseWakeLock() {
 
 async function handleVisibilityChange() {
   sendPresence(document.visibilityState === "visible");
-  if (document.visibilityState === "visible" && wakeLockWanted && wakeLock === null) {
-    await requestWakeLock();
-  }
+  if (document.visibilityState !== "visible") return;
+  if (wakeLockWanted && wakeLock === null) await requestWakeLock();
 }
 
 function syncViewControls() {
@@ -215,6 +220,7 @@ function syncViewControls() {
 }
 
 async function pollState() {
+  if (eventsOnline && Date.now() - lastEventAt < 20000) return;
   try {
     const response = await fetch("/api/status", { cache: "no-store" });
     if (!response.ok) throw new Error("State request failed.");
