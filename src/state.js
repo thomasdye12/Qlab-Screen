@@ -1,3 +1,5 @@
+import { APP_VERSION } from "./config.js";
+
 export const state = {
   connected: false,
   host: "",
@@ -61,6 +63,7 @@ export function publicStatePatch() {
 
 export function publicStateMeta() {
   return {
+    appVersion: APP_VERSION,
     connected: state.connected,
     host: state.host,
     workspaceId: state.workspaceId,

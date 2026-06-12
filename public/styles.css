@@ -115,6 +115,42 @@ body.focus-mode .running-list {
   font-weight: 800;
 }
 
+.status-chip {
+  display: inline-grid;
+  place-items: center;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.status-chip[data-state="on"] {
+  border-color: var(--running);
+  background: var(--running-soft);
+  color: var(--running);
+  box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.18);
+}
+
+.status-chip[data-state="pending"] {
+  border-color: var(--warn);
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.status-chip[data-state="unsupported"],
+.status-chip[data-state="off"] {
+  color: var(--muted);
+}
+
+.version-chip {
+  font-variant-numeric: tabular-nums;
+}
+
 .eyebrow,
 .label,
 .panel-head span,
@@ -305,6 +341,14 @@ button.secondary {
   white-space: nowrap;
 }
 
+.cue-live-time {
+  display: none;
+  color: var(--running);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
 .cue-swatch {
   width: 10px;
   height: 10px;
@@ -321,6 +365,10 @@ button.secondary {
 .cue-row.running .cue-number,
 .cue-row.running .cue-name {
   color: var(--running);
+}
+
+body.focus-mode .cue-row.running .cue-live-time {
+  display: block;
 }
 
 .cue-row.disabled {

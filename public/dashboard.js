@@ -10,6 +10,8 @@ const tvRemaining = document.querySelector("#tvRemaining");
 const tvRunningList = document.querySelector("#tvRunningList");
 const tvFullscreenButton = document.querySelector("#tvFullscreenButton");
 const tvWakeLockButton = document.querySelector("#tvWakeLockButton");
+const tvWakeStateBadge = document.querySelector("#tvWakeStateBadge");
+const tvVersionBadge = document.querySelector("#tvVersionBadge");
 const VIEWER_PAGE = "dashboard";
 const VIEWER_CLIENT_ID_KEY = "qlab-screen-client-id";
 
@@ -108,6 +110,7 @@ function render() {
   } else {
     tvConnection.textContent = currentState.connected ? "Connected" : currentState.lastError || "Disconnected";
   }
+  tvVersionBadge.textContent = `v${currentState.appVersion || "0.0.0"}`;
   tvWorkspace.textContent = currentState.workspaceName || currentState.workspaceId || "-";
   tvGroup.textContent = group || (running.length ? "Ungrouped cue" : "Waiting for QLab");
   tvCueNumber.textContent = primary?.number || "-";
@@ -212,11 +215,15 @@ function syncViewControls() {
   if (!("wakeLock" in navigator) || typeof navigator.wakeLock.request !== "function") {
     tvWakeLockButton.textContent = "Wake Lock Unsupported";
     tvWakeLockButton.disabled = true;
+    tvWakeStateBadge.textContent = "Awake Unavailable";
+    tvWakeStateBadge.dataset.state = "unsupported";
     return;
   }
 
   tvWakeLockButton.disabled = false;
   tvWakeLockButton.textContent = wakeLock ? "Allow Sleep" : "Keep Awake";
+  tvWakeStateBadge.textContent = wakeLock ? "Awake On" : (wakeLockWanted ? "Awake Waiting" : "Awake Off");
+  tvWakeStateBadge.dataset.state = wakeLock ? "on" : (wakeLockWanted ? "pending" : "off");
 }
 
 async function pollState() {

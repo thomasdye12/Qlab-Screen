@@ -18,6 +18,8 @@ const mobileRunningCount = document.querySelector("#mobileRunningCount");
 const mobileWorkspace = document.querySelector("#mobileWorkspace");
 const fullscreenButton = document.querySelector("#fullscreenButton");
 const wakeLockButton = document.querySelector("#wakeLockButton");
+const wakeStateBadge = document.querySelector("#wakeStateBadge");
+const versionBadge = document.querySelector("#versionBadge");
 const VIEWER_PAGE = "monitor";
 const VIEWER_CLIENT_ID_KEY = "qlab-screen-client-id";
 
@@ -32,6 +34,8 @@ let wakeLock = null;
 let wakeLockWanted = false;
 let lastCueVersion = -1;
 let lastRunningIdsKey = "";
+let fullStateRequest = null;
+let lastFullStateFetchAt = 0;
 const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
@@ -73,7 +77,7 @@ events.onerror = () => {
 };
 
 pollState();
-setInterval(pollState, 5000);
+setInterval(pollState, 2000);
 
 cueList.addEventListener("scroll", () => {
   if (autoScrolling) return;
@@ -93,6 +97,7 @@ setInterval(() => {
   if (document.visibilityState !== "visible") return;
   sendPresence(document.visibilityState === "visible");
 }, 30000);
+ensureFullState();
 
 function render(state) {
   currentState = state || {};
@@ -112,6 +117,7 @@ function render(state) {
     if (currentState.lastError) statusText.textContent = currentState.lastError;
   }
   workspaceHero.textContent = currentState.workspaceName || "Waiting for workspace";
+  versionBadge.textContent = `v${currentState.appVersion || "0.0.0"}`;
   const currentGroup = getCurrentGroup(currentState) || "-";
   workspaceText.textContent = currentGroup;
   runningCount.textContent = String((currentState.running || []).length);
@@ -125,6 +131,10 @@ function render(state) {
   runningList.innerHTML = currentState.running?.length
     ? currentState.running.map(renderRunningCue).join("")
     : "Nothing running.";
+
+  if (currentState.connected && !currentState.cues?.length) {
+    ensureFullState();
+  }
 
   renderMobileGlance(currentState, currentGroup, updateTime);
   requestAnimationFrame(() => scrollToActiveCue(currentState));
@@ -235,11 +245,15 @@ function syncViewControls() {
   if (!("wakeLock" in navigator) || typeof navigator.wakeLock.request !== "function") {
     wakeLockButton.textContent = "Wake Lock Unsupported";
     wakeLockButton.disabled = true;
+    wakeStateBadge.textContent = "Awake Unavailable";
+    wakeStateBadge.dataset.state = "unsupported";
     return;
   }
 
   wakeLockButton.disabled = false;
   wakeLockButton.textContent = wakeLock ? "Allow Sleep" : "Keep Awake";
+  wakeStateBadge.textContent = wakeLock ? "Awake On" : (wakeLockWanted ? "Awake Waiting" : "Awake Off");
+  wakeStateBadge.dataset.state = wakeLock ? "on" : (wakeLockWanted ? "pending" : "off");
 }
 
 function renderMobileGlance(state, currentGroup, updateTime) {
@@ -270,12 +284,37 @@ async function pollState() {
     const response = await fetch("/api/status", { cache: "no-store" });
     if (!response.ok) throw new Error("State request failed.");
     serverOnline = true;
-    render(mergeStatePatch(currentState, await response.json()));
+    const nextState = mergeStatePatch(currentState, await response.json());
+    render(nextState);
+    if (nextState.connected && !nextState.cues?.length) ensureFullState();
   } catch {
     serverOnline = false;
     eventsOnline = false;
     render(currentState);
   }
+}
+
+async function ensureFullState() {
+  if (fullStateRequest) return fullStateRequest;
+  if (Date.now() - lastFullStateFetchAt < 3000) return null;
+
+  lastFullStateFetchAt = Date.now();
+  fullStateRequest = fetch("/api/state", { cache: "no-store" })
+    .then((response) => {
+      if (!response.ok) throw new Error("Full state request failed.");
+      return response.json();
+    })
+    .then((fullState) => {
+      serverOnline = true;
+      render(fullState);
+      return fullState;
+    })
+    .catch(() => null)
+    .finally(() => {
+      fullStateRequest = null;
+    });
+
+  return fullStateRequest;
 }
 
 function mergeStatePatch(previousState, patch) {
@@ -291,6 +330,13 @@ function renderCue(cue, isRunning) {
   const isGroup = cue.type === "Group" || cue.type === "Cue List";
   const displayName = getCueDisplayName(cue);
   const detail = getCueDetail(cue);
+  const timing = currentState.time?.[cue.uniqueID] || {};
+  const elapsed = Number(timing.actionElapsed || 0);
+  const duration = Number(timing.duration || 0);
+  const remaining = duration > 0 ? Math.max(0, duration - elapsed) : null;
+  const liveTiming = isRunning
+    ? `<div class="cue-live-time">${escapeHtml(formatTime(elapsed))}${remaining != null ? ` / ${escapeHtml(formatTime(remaining))}` : ""}</div>`
+    : "";
   return `
     <article class="cue-row ${isRunning ? "running" : ""} ${isDisabled ? "disabled" : ""} ${isGroup ? "group-row" : ""}" data-cue-id="${escapeHtml(cue.uniqueID)}" data-parent-id="${escapeHtml(cue.parentId || "")}" style="--depth:${Number(cue.depth || 0)}">
       <div class="cue-number">${escapeHtml(cue.number || "-")}</div>
@@ -299,6 +345,7 @@ function renderCue(cue, isRunning) {
         <div class="cue-copy">
           <div class="cue-name">${escapeHtml(displayName)}</div>
           ${detail ? `<div class="cue-detail">${escapeHtml(detail)}</div>` : ""}
+          ${liveTiming}
         </div>
       </div>
       <div class="type">${escapeHtml(formatCueType(cue.type || "cue"))}</div>

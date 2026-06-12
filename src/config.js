@@ -1,9 +1,11 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 
 export const ROOT_DIR = fileURLToPath(new URL("..", import.meta.url));
 export const PUBLIC_DIR = join(ROOT_DIR, "public");
 export const SETTINGS_PATH = join(ROOT_DIR, "settings.json");
+export const APP_VERSION = readAppVersion();
 
 export const HTTP_PORT = Number(process.env.PORT || 3030);
 export const QLAB_TCP_PORT = Number(process.env.QLAB_TCP_PORT || 53000);
@@ -17,3 +19,12 @@ export const MIME_TYPES = {
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml"
 };
+
+function readAppVersion() {
+  try {
+    const packageJson = JSON.parse(readFileSync(join(ROOT_DIR, "package.json"), "utf8"));
+    return String(packageJson.version || "0.0.0");
+  } catch {
+    return "0.0.0";
+  }
+}
