@@ -94,14 +94,18 @@ function refreshTiming() {
     const base = `/workspace/${state.workspaceId}/cue_id/${id}`;
     const fields = await Promise.allSettled([
       query(state.host, `${base}/actionElapsed`, [], 1200),
+      query(state.host, `${base}/currentDuration`, [], 1200),
       query(state.host, `${base}/duration`, [], 1200),
       query(state.host, `${base}/isPaused`, [], 1200)
     ]);
 
+    const currentDuration = settledNumber(fields[1]);
+    const duration = currentDuration > 0 ? currentDuration : settledNumber(fields[2]);
+
     timing[id] = {
-      actionElapsed: settledData(fields[0]),
-      duration: settledData(fields[1]),
-      paused: Boolean(Number(settledData(fields[2]) || 0))
+      actionElapsed: settledNumber(fields[0]),
+      duration,
+      paused: Boolean(Number(settledData(fields[3]) || 0))
     };
   })).then(() => {
     state.time = timing;
@@ -110,6 +114,11 @@ function refreshTiming() {
 
 function settledData(result) {
   return result.status === "fulfilled" ? result.value.data : null;
+}
+
+function settledNumber(result) {
+  const value = Number(settledData(result));
+  return Number.isFinite(value) ? value : 0;
 }
 
 function clearTimers() {
