@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>QLab Connect Owner Console</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell admin-shell mac-shell">
+      <section class="connection-panel" aria-label="Owner console">
+        <div>
+          <p class="eyebrow">Mac app</p>
+          <h1>Owner Console</h1>
+        </div>
+        <nav class="page-links" aria-label="Pages">
+          <a href="/">Monitor</a>
+          <a href="/dashboard.html">TV Dashboard</a>
+          <a href="/admin.html">Web Admin</a>
+        </nav>
+      </section>
+
+      <section class="panel admin-panel">
+        <form id="macSettingsForm" class="admin-form mac-form">
+          <fieldset>
+            <legend>QLab connection</legend>
+            <label>
+              <span>QLab host</span>
+              <input name="host" autocomplete="off" placeholder="10.0.4.189" required>
+            </label>
+            <label>
+              <span>QLab passcode</span>
+              <input name="passcode" autocomplete="off" inputmode="numeric" placeholder="Leave blank to keep saved passcode">
+            </label>
+            <label>
+              <span>Workspace ID/name</span>
+              <input name="workspaceId" autocomplete="off" placeholder="Optional">
+            </label>
+            <label class="toggle-row">
+              <input name="autoConnect" type="checkbox">
+              <span>Auto-connect when the Mac app starts</span>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Server settings</legend>
+            <label>
+              <span>HTTP port</span>
+              <input name="httpPort" type="number" min="1" max="65535" inputmode="numeric" required>
+            </label>
+            <label>
+              <span>QLab TCP port</span>
+              <input name="qlabTcpPort" type="number" min="1" max="65535" inputmode="numeric" required>
+            </label>
+            <label>
+              <span>Admin username</span>
+              <input name="adminUser" autocomplete="username" required>
+            </label>
+            <label>
+              <span>Admin password</span>
+              <input name="adminPassword" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved password">
+            </label>
+          </fieldset>
+
+          <div class="mac-info">
+            <span>Settings file</span>
+            <strong id="settingsPath">Loading...</strong>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit">Save Settings</button>
+            <button id="connectButton" type="button" class="secondary">Save and Connect</button>
+          </div>
+          <p id="macSettingsMessage" class="form-message" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="/mac-settings.js" type="module"></script>
+  </body>
+</html>

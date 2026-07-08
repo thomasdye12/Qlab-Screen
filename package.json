@@ -1,12 +1,35 @@
 {
   "name": "qlab-screen",
   "version": "0.1.0",
+  "description": "A read-only QLab monitor for relay screens, backstage displays, and TV dashboards.",
+  "author": "Thomas Dye",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "check": "node --check server.js && for f in src/*.js public/*.js; do node --check \"$f\"; done"
+    "electron": "electron .",
+    "dist:mac": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac",
+    "check": "node --check server.js && for f in src/*.js public/*.js electron/*.js; do node --check \"$f\"; done"
+  },
+  "main": "electron/main.js",
+  "build": {
+    "appId": "com.tds.qlabconnect",
+    "productName": "QLab Connect",
+    "files": [
+      "electron/**/*",
+      "public/**/*",
+      "src/**/*",
+      "server.js",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    }
   },
   "engines": {
     "node": ">=18"
@@ -21,6 +44,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "electron": "^39.2.6",
+    "electron-builder": "^26.0.12",
     "nodemon": "^3.1.14"
   }
 }
