@@ -5,17 +5,25 @@ import { getSettings } from "./src/settings.js";
 import { state } from "./src/state.js";
 import { broadcastSnapshot } from "./src/events.js";
 
-const server = createHttpServer();
+export function startServer() {
+  const server = createHttpServer();
 
-server.listen(HTTP_PORT, () => {
-  console.log(`QLab Screen is running at http://localhost:${HTTP_PORT}`);
-  startHeartbeat();
+  server.listen(HTTP_PORT, () => {
+    console.log(`QLab Screen is running at http://localhost:${HTTP_PORT}`);
+    startHeartbeat();
 
-  const settings = getSettings();
-  if (settings.autoConnect && settings.host) {
-    connectToQlab(settings).catch((error) => {
-      state.lastError = error.message;
-      broadcastSnapshot();
-    });
-  }
-});
+    const settings = getSettings();
+    if (settings.autoConnect && settings.host) {
+      connectToQlab(settings).catch((error) => {
+        state.lastError = error.message;
+        broadcastSnapshot();
+      });
+    }
+  });
+
+  return server;
+}
+
+if (process.env.QLAB_ELECTRON !== "1") {
+  startServer();
+}

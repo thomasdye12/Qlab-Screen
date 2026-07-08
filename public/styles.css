@@ -669,6 +669,47 @@ body.focus-mode .cue-row.running .cue-live-time {
   color: var(--accent-strong);
 }
 
+.mac-form {
+  grid-template-columns: 1fr;
+}
+
+fieldset {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0 0 18px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+legend {
+  grid-column: 1 / -1;
+  padding: 0 0 4px;
+  color: var(--text);
+  font-weight: 900;
+}
+
+.mac-info {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #050505;
+}
+
+.mac-info span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.mac-info strong {
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+}
+
 .tv-body {
   overflow: hidden;
   background: #050505;
@@ -791,6 +832,7 @@ body.focus-mode .cue-row.running .cue-live-time {
 
 @media (max-width: 780px) {
   .admin-form,
+  fieldset,
   .tv-status,
   .tv-cue-line {
     grid-template-columns: 1fr;

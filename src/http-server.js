@@ -1,9 +1,11 @@
 import http from "node:http";
 import { hasAdminAuth, isAdminPath, requestAdminAuth } from "./auth.js";
+import { ADMIN_PASSWORD, ADMIN_USER, HTTP_PORT, QLAB_TCP_PORT, SETTINGS_PATH } from "./config.js";
 import { broadcastHeartbeat, handleEvents } from "./events.js";
 import { sendJson, readBody, serveStatic } from "./http-utils.js";
+import { denyMacOwnerAccess, hasMacOwnerAccess, isMacOwnerPath } from "./mac-owner.js";
 import { connectToQlab, disconnectQlab } from "./qlab.js";
-import { getSettings, publicSettings, updateSettings } from "./settings.js";
+import { getSettings, publicServerSettings, publicSettings, updateServerSettings, updateSettings } from "./settings.js";
 import { publicStatePatch, state } from "./state.js";
 import { listViewers, updateViewerPresence } from "./viewers.js";
 
@@ -11,6 +13,10 @@ export function createHttpServer() {
   return http.createServer(async (request, response) => {
     try {
       const url = new URL(request.url, `http://${request.headers.host}`);
+
+      if (isMacOwnerPath(url.pathname) && !hasMacOwnerAccess(request, url)) {
+        return denyMacOwnerAccess(response);
+      }
 
       if (isAdminPath(url.pathname) && !hasAdminAuth(request)) {
         return requestAdminAuth(response);
@@ -30,6 +36,14 @@ export function createHttpServer() {
 
       if (url.pathname === "/api/admin/settings" && request.method === "POST") {
         return handleSaveSettings(request, response);
+      }
+
+      if (url.pathname === "/api/mac/settings" && request.method === "GET") {
+        return handleMacSettings(response);
+      }
+
+      if (url.pathname === "/api/mac/settings" && request.method === "POST") {
+        return handleSaveMacSettings(request, response);
       }
 
       if (url.pathname === "/api/admin/viewers" && request.method === "GET") {
@@ -92,6 +106,7 @@ async function handleSaveSettings(request, response) {
     const body = await readBody(request);
     const previous = getSettings();
     const nextSettings = {
+      ...previous,
       host: String(body.host || "").trim(),
       passcode: String(body.passcode || previous.passcode || "").trim(),
       workspaceId: String(body.workspaceId || "").trim(),
@@ -114,6 +129,55 @@ async function handleSaveSettings(request, response) {
   }
 }
 
+function handleMacSettings(response) {
+  sendJson(response, {
+    qlab: publicSettings(),
+    server: publicServerSettings(),
+    active: {
+      httpPort: HTTP_PORT,
+      qlabTcpPort: QLAB_TCP_PORT,
+      adminUser: ADMIN_USER,
+      settingsPath: SETTINGS_PATH
+    }
+  });
+}
+
+async function handleSaveMacSettings(request, response) {
+  const body = await readBody(request);
+  const previous = getSettings();
+  const qlab = body.qlab || {};
+  const server = body.server || {};
+  const nextSettings = {
+    ...previous,
+    host: String(qlab.host || "").trim(),
+    passcode: String(qlab.passcode || previous.passcode || "").trim(),
+    workspaceId: String(qlab.workspaceId || "").trim(),
+    autoConnect: Boolean(qlab.autoConnect)
+  };
+
+  if (!nextSettings.host) {
+    return sendJson(response, { error: "QLab host is required." }, 400);
+  }
+
+  await updateSettings(nextSettings);
+  await updateServerSettings({
+    httpPort: readPositiveNumber(server.httpPort, HTTP_PORT),
+    qlabTcpPort: readPositiveNumber(server.qlabTcpPort, QLAB_TCP_PORT),
+    adminUser: String(server.adminUser || ADMIN_USER).trim() || ADMIN_USER,
+    adminPassword: String(server.adminPassword || previous.server.adminPassword || ADMIN_PASSWORD).trim()
+  });
+
+  sendJson(response, {
+    ok: true,
+    restartRequired: Number(server.httpPort) !== HTTP_PORT ||
+      Number(server.qlabTcpPort) !== QLAB_TCP_PORT ||
+      String(server.adminUser || "") !== ADMIN_USER ||
+      Boolean(server.adminPassword),
+    settings: publicSettings(),
+    server: publicServerSettings()
+  });
+}
+
 async function handleDisconnect(response) {
   await disconnectQlab();
   sendJson(response, state);
@@ -123,4 +187,9 @@ async function handlePresence(request, response) {
   const body = await readBody(request);
   updateViewerPresence(request, body);
   sendJson(response, { ok: true });
+}
+
+function readPositiveNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
 }
